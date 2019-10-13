@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Popover, Button, Checkbox } from 'antd'
-import { SHOW_LATEST_RCS } from '../../utils'
+import { SHOW_LATEST_RCS, HIGHLIGHT_WHITESPACE_CHANGES } from '../../utils'
 
 const Settings = ({ handleSettingsChange }) => {
   const [popoverVisibility, setVisibility] = useState(false)
@@ -14,9 +14,17 @@ const Settings = ({ handleSettingsChange }) => {
     <Popover
       placement="bottomRight"
       content={
-        <Checkbox.Group onChange={updateCheckboxValues}>
+        <Checkbox.Group
+          onChange={updateCheckboxValues}
+          defaultValue={[HIGHLIGHT_WHITESPACE_CHANGES]}
+        >
           <div>
             <Checkbox value={SHOW_LATEST_RCS}>{SHOW_LATEST_RCS}</Checkbox>
+          </div>
+          <div>
+            <Checkbox value={HIGHLIGHT_WHITESPACE_CHANGES}>
+              {HIGHLIGHT_WHITESPACE_CHANGES}
+            </Checkbox>
           </div>
         </Checkbox.Group>
       }

@@ -23,7 +23,8 @@ const DiffViewer = ({
   fromVersion,
   toVersion,
   selectedChanges,
-  onToggleChangeSelection
+  onToggleChangeSelection,
+  highlightWhitespaceChanges
 }) => {
   const [isLoading, setLoading] = useState(true)
   const [diff, setDiff] = useState(null)
@@ -107,7 +108,8 @@ const DiffViewer = ({
     toVersion: toVersion,
     handleCompleteDiff: handleCompleteDiff,
     selectedChanges: selectedChanges,
-    onToggleChangeSelection: onToggleChangeSelection
+    onToggleChangeSelection: onToggleChangeSelection,
+    highlightWhitespaceChanges: highlightWhitespaceChanges
   }
 
   return (

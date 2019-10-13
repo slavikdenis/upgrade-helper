@@ -36,3 +36,4 @@ export const getChangelogURL = ({ version }) =>
 
 // settings constants
 export const SHOW_LATEST_RCS = 'Show latest release candidates'
+export const HIGHLIGHT_WHITESPACE_CHANGES = 'Highlight whitespace changes'

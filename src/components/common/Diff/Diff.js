@@ -1,6 +1,13 @@
 import React, { useState } from 'react'
 import styled from 'styled-components'
-import { Diff as RDiff, Hunk, markEdits, tokenize } from 'react-diff-view'
+import {
+  Diff as RDiff,
+  Hunk,
+  markEdits,
+  tokenize,
+  pickRanges
+} from 'react-diff-view'
+import flatMap from 'lodash.flatmap'
 import DiffHeader from './DiffHeader'
 import { getComments } from './DiffComment'
 
@@ -48,6 +55,10 @@ const DiffView = styled(RDiff)`
     background-color: #acf2bd;
   }
 
+  td .diff-whitespace-change .diff-code-edit {
+    background-color: transparent;
+  }
+
   td.diff-gutter-omit:before {
     width: 0;
     background-color: transparent;
@@ -57,6 +68,77 @@ const DiffView = styled(RDiff)`
 // Diff will be collapsed by default if the file has been deleted or has more than 5 hunks
 const isDiffCollapsedByDefault = ({ type, hunks }) =>
   type === 'delete' || hunks.length > 5 ? true : undefined
+
+// Visually hiding whitespace changes
+// More details: https://github.com/otakustay/react-diff-view/issues/65#issuecomment-535414888
+const TOKEN_TYPE_SPACE = 'space'
+
+const findLeadingRange = change => {
+  const [spaces] = /^\s*/.exec(change.content)
+  return spaces
+    ? {
+        type: TOKEN_TYPE_SPACE,
+        lineNumber: change.lineNumber,
+        start: 0,
+        length: spaces.length,
+        properties: { value: spaces }
+      }
+    : null
+}
+
+const findTrailingRange = change => {
+  const [spaces] = /\s*$/.exec(change.content)
+  return spaces
+    ? {
+        type: TOKEN_TYPE_SPACE,
+        lineNumber: change.lineNumber,
+        start: change.content.length - spaces.length,
+        length: spaces.length,
+        properties: { value: spaces }
+      }
+    : null
+}
+
+const pickLeadingAndTrailingSpaces = hunks => {
+  const changes = flatMap(hunks, hunk => hunk.changes)
+  const [oldRanges, newRanges] = changes.reduce(
+    ([oldRanges, newRanges], change) => {
+      const leadingRange = findLeadingRange(change)
+      const trailingRange = findTrailingRange(change)
+      const pushRange = ranges => {
+        leadingRange && ranges.push(leadingRange)
+        trailingRange && ranges.push(trailingRange)
+      }
+
+      if (!change.isInsert) {
+        pushRange(oldRanges)
+      }
+      if (!change.isDelete) {
+        pushRange(newRanges)
+      }
+
+      return [oldRanges, newRanges]
+    },
+    [[], []]
+  )
+  return pickRanges(oldRanges, newRanges)
+}
+
+const renderToken = (token, defaultRender, i) => {
+  switch (token.type) {
+    case TOKEN_TYPE_SPACE:
+      return (
+        <span key={i} className="diff-whitespace-change">
+          {token.children &&
+            token.children.map((token, i) =>
+              renderToken(token, defaultRender, i)
+            )}
+        </span>
+      )
+    default:
+      return defaultRender(token, i)
+  }
+}
 
 const Diff = ({
   oldPath,
@@ -72,7 +154,8 @@ const Diff = ({
   onToggleChangeSelection,
   areAllCollapsed,
   setAllCollapsed,
-  diffViewStyle
+  diffViewStyle,
+  highlightWhitespaceChanges
 }) => {
   const [isDiffCollapsed, setIsDiffCollapsed] = useState(
     isDiffCollapsedByDefault({ type, hunks })
@@ -114,10 +197,18 @@ const Diff = ({
           widgets={getComments({ newPath, fromVersion, toVersion })}
           optimizeSelection={true}
           selectedChanges={selectedChanges}
+          renderToken={renderToken}
         >
           {hunks => {
+            const enhancers = [markEdits(hunks)]
+
+            if (!highlightWhitespaceChanges) {
+              enhancers.push(pickLeadingAndTrailingSpaces(hunks))
+            }
+
             const options = {
-              enhancers: [markEdits(hunks)]
+              highlight: false,
+              enhancers: enhancers
             }
 
             const tokens = tokenize(hunks, options)
@@ -144,6 +235,7 @@ const Diff = ({
 const arePropsEqual = (prevProps, nextProps) =>
   prevProps.isDiffCompleted === nextProps.isDiffCompleted &&
   prevProps.areAllCollapsed === nextProps.areAllCollapsed &&
-  prevProps.diffViewStyle === nextProps.diffViewStyle
+  prevProps.diffViewStyle === nextProps.diffViewStyle &&
+  prevProps.highlightWhitespaceChanges === nextProps.highlightWhitespaceChanges
 
 export default React.memo(Diff, arePropsEqual)

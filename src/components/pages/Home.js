@@ -8,7 +8,7 @@ import DiffViewer from '../common/DiffViewer'
 import Settings from '../common/Settings'
 import { homepage } from '../../../package.json'
 import logo from '../../assets/logo.svg'
-import { SHOW_LATEST_RCS } from '../../utils'
+import { SHOW_LATEST_RCS, HIGHLIGHT_WHITESPACE_CHANGES } from '../../utils'
 
 const Page = styled.div`
   display: flex;
@@ -53,7 +53,8 @@ const Home = () => {
   const [toVersion, setToVersion] = useState('')
   const [showDiff, setShowDiff] = useState(false)
   const [settings, setSettings] = useState({
-    [`${SHOW_LATEST_RCS}`]: false
+    [`${SHOW_LATEST_RCS}`]: false,
+    [`${HIGHLIGHT_WHITESPACE_CHANGES}`]: true
   })
 
   useEffect(() => {
@@ -118,6 +119,7 @@ const Home = () => {
         showDiff={showDiff}
         fromVersion={fromVersion}
         toVersion={toVersion}
+        highlightWhitespaceChanges={settings[HIGHLIGHT_WHITESPACE_CHANGES]}
       />
     </Page>
   )
